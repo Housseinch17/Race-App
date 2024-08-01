@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Coroutine Race app</string>
+    <string name="run_race">Run a race</string>
+    <string name="start">Start</string>
+    <string name="pause">Pause</string>
+    <string name="reset">Reset</string>
+    <string name="race">Race</string>
+
+</resources>
