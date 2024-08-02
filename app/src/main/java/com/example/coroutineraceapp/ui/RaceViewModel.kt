@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.example.coroutineraceapp.data.Player.PlayerOne
+import com.example.coroutineraceapp.data.Player.PlayerTwo
 
 @HiltViewModel
 class RaceViewModel @Inject constructor() : ViewModel() {
@@ -31,6 +33,7 @@ class RaceViewModel @Inject constructor() : ViewModel() {
 
     fun reset() {
         _raceUiState.value = RaceUiState()
+        cancelAllJobs()
     }
 
     suspend fun startRace() {
@@ -43,8 +46,8 @@ class RaceViewModel @Inject constructor() : ViewModel() {
                     _raceUiState.update {
                         it.copy(buttonText = pause)
                     }
-                    playerOneJob = launch { updatePlayerOne() }
-                    playerTwoJob = launch { updatePlayerTwo() }
+                    playerOneJob = launch { updatePlayer(_raceUiState.value.playerOne) }
+                    playerTwoJob = launch { updatePlayer(_raceUiState.value.playerTwo) }
                 }
 
                 pause -> {
@@ -57,38 +60,34 @@ class RaceViewModel @Inject constructor() : ViewModel() {
         }
     }
 
-    private suspend fun updatePlayer(player: Player, onUpdatePlayer: (Player) -> Unit) {
+    private suspend fun updatePlayer(player: Player) {
         var playerProgression = player.playerCurrentProgress
         val playerIncrement = player.playerIncrement
         var playerPercentage: Int
         while (playerProgression < DataSource.maxPlayerProgress) {
             playerProgression += playerIncrement
             playerPercentage = playerProgression
-            onUpdatePlayer(
-                player.copy(
+
+
+            val updatedPlayer = when (player) {
+                is PlayerOne -> player.copy(
                     playerCurrentProgress = playerProgression,
                     percentage = playerPercentage
                 )
-            )
+
+                is PlayerTwo -> player.copy(
+                    playerCurrentProgress = playerProgression,
+                    percentage = playerPercentage
+                )
+            }
+
+            _raceUiState.update {
+                it.copy(
+                    playerOne = if (player is PlayerOne) updatedPlayer else it.playerOne,
+                    playerTwo = if (player is PlayerTwo) updatedPlayer else it.playerTwo
+                )
+            }
             delay(500)
-        }
-    }
-
-    private suspend fun updatePlayerTwo() {
-        val playerTwo = _raceUiState.value.playerTwo
-        updatePlayer(playerTwo) { updatedPlayer ->
-            _raceUiState.update {
-                it.copy(playerTwo = updatedPlayer)
-            }
-        }
-    }
-
-    private suspend fun updatePlayerOne() {
-        val playerOne = _raceUiState.value.playerOne
-        updatePlayer(playerOne) { updatedPlayer ->
-            _raceUiState.update {
-                it.copy(playerOne = updatedPlayer)
-            }
         }
     }
 }
