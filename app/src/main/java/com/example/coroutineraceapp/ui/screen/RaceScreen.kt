@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,22 +29,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.coroutineraceapp.R
 import com.example.coroutineraceapp.data.Player
 import com.example.coroutineraceapp.ui.RaceViewModel
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 
 
 @Composable
-fun RaceScreen(modifier: Modifier,raceViewModel: RaceViewModel){
+fun RaceScreen(modifier: Modifier, raceViewModel: RaceViewModel) {
     val raceUiState by raceViewModel.raceUiState.collectAsStateWithLifecycle()
     MyScreen(
         modifier = modifier,
         playerOne = raceUiState.playerOne,
         playerTwo = raceUiState.playerTwo,
         raceButtonText = raceUiState.buttonText,
-        raceButtonClick = {
-            runBlocking {
-                raceViewModel.startRace()
-            }
-        },
+        raceButtonClick = raceViewModel::startRace,
         resetButtonText = R.string.reset,
         resetButtonClick = raceViewModel::reset
     )
@@ -55,10 +52,12 @@ fun MyScreen(
     playerOne: Player,
     playerTwo: Player,
     raceButtonText: Int,
-    raceButtonClick: () -> Unit,
+    raceButtonClick: suspend () -> Unit,
     resetButtonText: Int,
     resetButtonClick: () -> Unit,
 ) {
+    val scope = rememberCoroutineScope()
+
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.Center,
@@ -98,7 +97,11 @@ fun MyScreen(
         Spacer(modifier = Modifier.height(20.dp))
         Buttons(
             modifier = Modifier.fillMaxWidth(),
-            onClick = raceButtonClick,
+            onClick = {
+                scope.launch {
+                    raceButtonClick()
+                }
+            },
             text = stringResource(id = raceButtonText),
             buttonColors = ButtonDefaults.buttonColors(
                 Color.Blue
